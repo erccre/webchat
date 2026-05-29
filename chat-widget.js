@@ -118,17 +118,17 @@
             return `${CONFIG.apiBase}/public/${CONFIG.tenantId}/${mediaUrl}`;
         },
         sanitizeFileName: (filename) => {
-            if (!filename) return '';
-            return filename
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-zA-Z0-9.\-_]/g, '_')
-                .replace(/_+/g, '_')
-                .replace(/
-^
-_+|_+
-$
-/g, '');
+    if (!filename) return 'arquivo';
+
+    const name = filename
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_+|_+$/g, '');
+
+    return name || 'arquivo';
+
         },
         getAckIcon: (ack) => {
             const icons = { 0: '🕓', 1: '✔️', 2: '<span style="color:#9E9E9E;">✔️</span>', 3: '<span style="color:#2196F3;">✔️✔️</span>', '-1': '❌' };
