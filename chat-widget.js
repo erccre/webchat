@@ -120,15 +120,18 @@
         sanitizeFileName: (filename) => {
     if (!filename) return 'arquivo';
 
-    const name = filename
+    const lastDot = filename.lastIndexOf('.');
+    const ext = lastDot > 0 ? filename.substring(lastDot) : '';
+    const name = filename.substring(0, lastDot > 0 ? lastDot : filename.length);
+
+    const sanitized = name
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+        .replace(/[^a-zA-Z0-9\-_]/g, '_')
         .replace(/_+/g, '_')
-        .replace(/^_+|_+$/g, '');
+        .replace(/^_+|_+$/g, '') || 'arquivo';
 
-    return name || 'arquivo';
-
+    return sanitized + ext;
         },
         getAckIcon: (ack) => {
             const icons = { 0: '🕓', 1: '✔️', 2: '<span style="color:#9E9E9E;">✔️</span>', 3: '<span style="color:#2196F3;">✔️✔️</span>', '-1': '❌' };
