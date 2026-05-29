@@ -1,3 +1,4 @@
+
 // Widget de Chat CHANNEL
 (function() {
     // Cria o elemento do widget
@@ -243,43 +244,6 @@
             border-radius: 4px;
         }
 
-        .channel-menu-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .channel-menu-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: #1565c0;
-            word-break: break-word;
-        }
-
-        .channel-menu-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .channel-menu-pill {
-            border: 1px solid #2196F3;
-            background: #ffffff;
-            color: #2196F3;
-            padding: 7px 10px;
-            border-radius: 18px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            max-width: 100%;
-            word-break: break-word;
-        }
-
-        .channel-menu-pill:hover {
-            background: #2196F3;
-            color: #ffffff;
-        }
-
         @media (max-width: 480px) {
             #channel-chat-container {
                 width: 100%;
@@ -296,8 +260,10 @@
     </style>
     `;
 
+    // Adiciona o widget ao documento
     document.body.insertAdjacentHTML('beforeend', widgetHTML);
 
+    // Inicializa o widget
     const chatButton = document.getElementById('channel-chat-button');
     const chatContainer = document.getElementById('channel-chat-container');
     const chatClose = document.getElementById('channel-chat-close');
@@ -306,15 +272,18 @@
     const messageInput = document.getElementById('channel-chat-input');
     const sendButton = document.getElementById('channel-chat-send');
     const sessionSpan = document.getElementById('channel-chat-session');
+    const widgetDiv = document.getElementById('channel-chat-widget');
     const fileInput = document.getElementById('channel-chat-file');
     const attachButton = document.getElementById('channel-chat-attach');
 
+    // Variáveis globais para sessão e token
     let webchatId = null;
     let token = null;
     let ws = null;
     let chatLoaded = false;
     const tenantId = '2';
 
+    // Funções de controle do widget
     chatButton.addEventListener('click', async () => {
         chatContainer.classList.add('show');
         if (!chatLoaded) {
@@ -328,12 +297,12 @@
         chatContainer.classList.remove('show');
     });
 
+    // Função para gerar ID único de sessão
     function generateUniqueId() {
         const timestamp = Date.now().toString(36);
         const random = Math.random().toString(36).substring(2, 8);
         return `${timestamp}-${random}`;
     }
-
     function generateSessionId() {
         if (!sessionStorage.getItem('channelWebchatId')) {
             sessionStorage.setItem('channelWebchatId', generateUniqueId());
@@ -341,10 +310,12 @@
         return sessionStorage.getItem('channelWebchatId');
     }
 
+    // Função para registrar o usuário no backend
     async function registerWebchat() {
         webchatId = generateSessionId();
         const name = 'WebChat ' + webchatId;
         const email = 'webchat@webchat.com';
+        const tenantId = '2';
         const wabaId = 'f0e8e993-97ff-40b1-8111-8f75d77a9343';
         const websocketToken = '20757fb5-0187-475d-8c6d-2d0778bdd96f';
         const response = await fetch(`https://api.maxzap.com.br/webchat/register/${wabaId}`, {
@@ -360,17 +331,20 @@
         return { webchatId, token };
     }
 
+    // Exibe o ID da sessão
     async function showSessionId() {
         const { webchatId } = await registerWebchat();
         sessionSpan.textContent = `Sessão: ${webchatId}`;
     }
     showSessionId();
 
+    // Função para formatar hora
     function formatTime(dateString) {
         const date = new Date(dateString);
         return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
 
+    // Função para formatar texto estilo WhatsApp
     function formatWhatsapp(text) {
         let formatted = String(text || '');
         formatted = formatted.replace(/\*(.*?)\*/g, '<b>$1</b>');
@@ -380,42 +354,8 @@
         return formatted;
     }
 
-    function escapeHtml(text) {
-        return String(text || '')
-            .replace(/&/g, '&')
-            .replace(/</g, '<')
-            .replace(/>/g, '>')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
 
-    function parseMenuMessage(text) {
-        const raw = String(text || '').trim();
-        if (!raw.startsWith('#MENU')) return null;
-        const normalized = raw
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/NEW LINE/gi, '\n')
-            .replace(/\\n/g, '\n');
-        const lines = normalized.split('\n').map(l => l.trim()).filter(Boolean);
-        if (!lines.length) return null;
-        const title = lines[0].replace(/
-^
-#MENU\s*/i, '').trim() || 'Escolha uma opcao';
-        const items = lines.slice(1).map(l => l.replace(/
-^
-\d+\.\s*/, '').trim()).filter(Boolean);
-        if (!items.length) return null;
-        return { title, items };
-    }
-
-    function buildMenuHtml(menu) {
-        const buttonsHtml = menu.items.map(item => {
-            const safe = escapeHtml(item);
-            return `<button type="button" class="channel-menu-pill" data-menu-send="${safe}">${safe}</button>`;
-        }).join('');
-        return `<div class="channel-menu-wrapper"><div class="channel-menu-title">${escapeHtml(menu.title)}</div><div class="channel-menu-container">${buttonsHtml}</div></div>`;
-    }
-
+    // Função para construir URL completa da mídia
     function buildMediaUrl(mediaUrl) {
         if (!mediaUrl) return null;
         if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
@@ -425,6 +365,7 @@
         return `${baseUrl}/${mediaUrl}`;
     }
 
+    // Função para adicionar mensagem
     function appendMessage(text, type, time = '', ack = null, id = null, mediaType = null, mediaUrl = null) {
         const messageDiv = document.createElement('div');
         if (id) messageDiv.id = 'msg-' + id;
@@ -436,7 +377,7 @@
 
         let contentHtml = '';
         let caption = '';
-
+        
         if (text && text.startsWith('caption: ')) {
             caption = text.substring(9);
             text = '';
@@ -446,42 +387,44 @@
             const fullMediaUrl = buildMediaUrl(mediaUrl);
             switch (mediaType.toLowerCase()) {
                 case 'image':
-                    contentHtml = `<div class="channel-media"><img src="${fullMediaUrl}" alt="Imagem" onclick="window.open('${fullMediaUrl}', '_blank')"> ${caption ? `<div class="channel-media-caption">${formatWhatsapp(caption)}</div>` : ''}</div>`;
+                    contentHtml = `<div class="channel-media">
+                        <img src="${fullMediaUrl}" alt="Imagem" onclick="window.open('${fullMediaUrl}', '_blank')">
+                        ${caption ? `<div class="channel-media-caption">${formatWhatsapp(caption)}</div>` : ''}
+                    </div>`;
                     break;
                 case 'video':
-                    contentHtml = `<div class="channel-media"><video controls><source src="${fullMediaUrl}" type="video/mp4"></video> ${caption ? `<div class="channel-media-caption">${formatWhatsapp(caption)}</div>` : ''}</div>`;
+                    contentHtml = `<div class="channel-media">
+                        <video controls><source src="${fullMediaUrl}" type="video/mp4"></video>
+                        ${caption ? `<div class="channel-media-caption">${formatWhatsapp(caption)}</div>` : ''}
+                    </div>`;
                     break;
                 case 'audio':
-                    contentHtml = `<div class="channel-media"><audio controls><source src="${fullMediaUrl}" type="audio/mpeg"></audio> ${caption ? `<div class="channel-media-caption">${formatWhatsapp(caption)}</div>` : ''}</div>`;
+                    contentHtml = `<div class="channel-media">
+                        <audio controls><source src="${fullMediaUrl}" type="audio/mpeg"></audio>
+                        ${caption ? `<div class="channel-media-caption">${formatWhatsapp(caption)}</div>` : ''}
+                    </div>`;
                     break;
                 case 'document':
-                    contentHtml = `<a href="${fullMediaUrl}" class="channel-media-document" target="_blank"><i>📄</i>${caption || 'Documento'}</a>`;
+                    contentHtml = `<a href="${fullMediaUrl}" class="channel-media-document" target="_blank">
+                        <i>📄</i>${caption || 'Documento'}
+                    </a>`;
                     break;
                 default:
                     contentHtml = `<span>${formatWhatsapp(text)}</span>`;
             }
         } else {
-            const menuData = parseMenuMessage(text);
-            if (menuData) {
-                contentHtml = buildMenuHtml(menuData);
-            } else {
-                contentHtml = `<span style="white-space:normal;">${formatWhatsapp(text)}</span>`;
-            }
+
+            contentHtml = `<span>${formatWhatsapp(text)}</span>`;
+
         }
 
         messageDiv.innerHTML = `${contentHtml}<br><span style="font-size:10px;color:#888;">${time} ${ackHtml}</span>`;
         messagesDiv.appendChild(messageDiv);
 
-        messageDiv.querySelectorAll('[data-menu-send]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                messageInput.value = btn.getAttribute('data-menu-send');
-                sendButton.click();
-            });
-        });
-
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
+    // Função para atualizar o ack de uma mensagem
     function updateMessageAck(messageId, ack) {
         const msgDiv = document.getElementById('msg-' + messageId);
         if (msgDiv) {
@@ -492,6 +435,7 @@
         }
     }
 
+    // Função para obter ícone do ack
     function getAckIcon(ack) {
         if (ack === 0) return '🕓';
         if (ack === 1) return '✔️';
@@ -501,50 +445,74 @@
         return '';
     }
 
+    // Função para renderizar o histórico completo
     function renderHistory(messages) {
         messagesDiv.innerHTML = '';
         messages.forEach(msg => {
-            appendMessage(msg.body, msg.fromMe ? 'channel-received' : 'channel-sent', formatTime(msg.createdAt), msg.ack, msg.id, msg.mediaType, msg.mediaUrl);
+            appendMessage(
+                msg.body,
+                msg.fromMe ? 'channel-received' : 'channel-sent',
+                formatTime(msg.createdAt),
+                msg.ack,
+                msg.id,
+                msg.mediaType,
+                msg.mediaUrl
+            );
         });
     }
 
+    // Função para carregar histórico de mensagens
     async function loadMessageHistory() {
         try {
             const wabaId = 'f0e8e993-97ff-40b1-8111-8f75d77a9343';
             const websocketToken = '20757fb5-0187-475d-8c6d-2d0778bdd96f';
             const response = await fetch(`https://api.maxzap.com.br/webchat/messages/${wabaId}?from=${webchatId}&tenantId=2`, {
-                headers: { 'x-websocket-token': websocketToken }
+                headers: {
+                    'x-websocket-token': websocketToken
+                }
             });
             const data = await response.json();
-            if (Array.isArray(data)) renderHistory(data);
+            if (Array.isArray(data)) {
+                renderHistory(data);
+            } else {
+                process.env.LOGGER_WARN === 'true' && console.warn('[WebChat] Resposta da API não é um array:', data);
+            }
         } catch (error) {
-            console.error('[WebChat] Erro ao carregar histórico:', error);
+            process.env.LOGGER_ERROR === 'true' && console.error('[WebChat] Erro ao carregar histórico:', error);
         }
     }
 
+    // Função para gerar um ID temporário para mensagens enviadas
     function generateTempId() {
         return 'temp-' + Math.random().toString(36).substr(2, 9);
     }
 
+    // Função para atualizar o ID de uma mensagem no DOM
     function updateMessageId(tempId, realId) {
         const tempDiv = document.getElementById('msg-' + tempId);
-        if (tempDiv) tempDiv.id = 'msg-' + realId;
+        if (tempDiv) {
+            tempDiv.id = 'msg-' + realId;
+        }
     }
 
+    // Função para sanitizar o nome do arquivo
     function sanitizeFileName(filename) {
         if (!filename) return '';
-        return filename.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9.\-_]/g, '_').replace(/_+/g, '_').replace(/
-^
-_+|_+
-$
-/g, '');
+        return filename
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9.\-_]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '');
     }
 
+    // Função para enviar mídia
     async function sendMedia(file) {
         const sanitizedFileName = sanitizeFileName(file.name);
         const formData = new FormData();
+        
         formData.append('medias', file, sanitizedFileName);
-
+        
         const data = {
             body: 'caption: ' + (messageInput.value.trim() || 'Mídia enviada'),
             from: webchatId,
@@ -565,23 +533,57 @@ $
         try {
             const wabaId = 'f0e8e993-97ff-40b1-8111-8f75d77a9343';
             const websocketToken = '20757fb5-0187-475d-8c6d-2d0778bdd96f';
+
             const response = await fetch(`https://api.maxzap.com.br/webchat-webhook/${wabaId}`, {
                 method: 'POST',
-                headers: { 'x-websocket-token': websocketToken },
+                headers: {
+                    'x-websocket-token': websocketToken
+                },
                 body: formData
             });
+            
+            const responseText = await response.text();
 
-            if (!response.ok) throw new Error('Erro ao enviar mídia');
+            let respData = {};
+            if (responseText) {
+                try {
+                    respData = JSON.parse(responseText);
+                } catch (parseError) {
+                    process.env.LOGGER_ERROR === 'true' && console.error('[WebChat] Erro ao fazer parse da resposta:', parseError);
+                    throw new Error('Resposta inválida do servidor');
+                }
+            }
+
+            if (!response.ok) {
+                throw new Error(respData.message || 'Erro ao enviar mídia');
+            }
+
             messageInput.value = '';
+            
             const tempId = generateTempId();
-            appendMessage(data.body, 'channel-sent', formatTime(new Date().toISOString()), 0, tempId, data.mediaType, null);
+            appendMessage(
+                data.body,
+                'channel-sent',
+                formatTime(new Date().toISOString()),
+                0,
+                tempId,
+                data.mediaType,
+                null
+            );
+
             await loadMessageHistory();
+
         } catch (error) {
-            console.error('[WebChat] Erro ao enviar mídia:', error);
+            process.env.LOGGER_ERROR === 'true' && console.error('[WebChat] Erro detalhado ao enviar mídia:', {
+                mensagem: error.message,
+                stack: error.stack,
+                erro: error
+            });
             alert('Erro ao enviar mídia. Por favor, tente novamente.');
         }
     }
 
+    // Event listeners para envio de mensagem
     sendButton.addEventListener('click', async () => {
         const message = messageInput.value.trim();
         if (message) {
@@ -605,36 +607,62 @@ $
                 const websocketToken = '20757fb5-0187-475d-8c6d-2d0778bdd96f';
                 const response = await fetch(`https://api.maxzap.com.br/webchat-webhook/${wabaId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'x-websocket-token': websocketToken },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-websocket-token': websocketToken
+                    },
                     body: JSON.stringify(data)
                 });
                 const respData = await response.json();
-                if (respData && respData.id) updateMessageId(tempId, respData.id);
+                if (respData && respData.id) {
+                    updateMessageId(tempId, respData.id);
+                }
+                if (respData && respData.mediaUrl) {
+                    appendMessage(
+                        respData.body,
+                        'channel-sent',
+                        formatTime(new Date().toISOString()),
+                        0,
+                        respData.id || tempId,
+                        respData.mediaType,
+                        respData.mediaUrl
+                    );
+                }
+
                 await loadMessageHistory();
+
             } catch (error) {
-                console.error('[WebChat] Erro ao enviar mensagem:', error);
+                process.env.LOGGER_ERROR === 'true' && console.error('[WebChat] Erro ao enviar mensagem:', error);
             }
         }
     });
 
     messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendButton.click();
+        if (e.key === 'Enter') {
+            sendButton.click();
+        }
     });
 
+    // Event listener para o botão de anexo
     attachButton.addEventListener('click', () => {
         fileInput.click();
     });
 
+    // Event listener para seleção de arquivo
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (file) sendMedia(file);
+        if (file) {
+            sendMedia(file);
+        }
         fileInput.value = '';
     });
 
+    // WebSocket para receber mensagens e ack em tempo real
     function connectWebSocket() {
         if (!webchatId || !token) return;
-
-        let pingInterval, historyInterval;
+        
+        let pingInterval;
+        let historyInterval;
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 5;
         const RECONNECT_DELAY = 5000;
@@ -645,15 +673,21 @@ $
             const wabaId = 'f0e8e993-97ff-40b1-8111-8f75d77a9343';
             const websocketToken = '20757fb5-0187-475d-8c6d-2d0778bdd96f';
             ws = new WebSocket(`wss://api.maxzap.com.br/wss?from=${webchatId}&token=${token}`);
-
+            
             ws.onopen = () => {
-                console.log('[WebChat] WebSocket conectado!');
+                process.env.LOGGER_INFO === 'true' && console.log('[WebChat] WebSocket conectado!');
                 reconnectAttempts = 0;
+                
                 pingInterval = setInterval(() => {
-                    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' }));
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'ping' }));
+                    }
                 }, PING_INTERVAL);
+
                 historyInterval = setInterval(async () => {
-                    if (ws.readyState === WebSocket.OPEN) await loadMessageHistory();
+                    if (ws.readyState === WebSocket.OPEN) {
+                        await loadMessageHistory();
+                    }
                 }, HISTORY_INTERVAL);
             };
 
@@ -662,36 +696,61 @@ $
                     const data = JSON.parse(event.data);
                     if (data.type === 'webhook' && data.payload && data.payload.message) {
                         const msg = data.payload.message;
-                        appendMessage(msg.body, 'channel-received', formatTime(msg.createdAt), msg.ack, msg.id, msg.mediaType, msg.mediaUrl);
-                        if (msg.mediaType) loadMessageHistory();
+                        appendMessage(
+                            msg.body,
+                            'channel-received',
+                            formatTime(msg.createdAt),
+                            msg.ack,
+                            msg.id,
+                            msg.mediaType,
+                            msg.mediaUrl
+                        );
+                        if (msg.mediaType) {
+                            loadMessageHistory();
+                        }
                     }
                     if (data.type === 'ack_update' && data.payload) {
                         if (data.payload.mediaType) {
                             const msgDiv = document.getElementById('msg-' + data.payload.id);
                             if (msgDiv) {
                                 msgDiv.remove();
-                                appendMessage(data.payload.body, 'channel-sent', formatTime(data.payload.createdAt), data.payload.ack, data.payload.id, data.payload.mediaType, data.payload.mediaUrl);
+                                appendMessage(
+                                    data.payload.body,
+                                    'channel-sent',
+                                    formatTime(data.payload.createdAt),
+                                    data.payload.ack,
+                                    data.payload.id,
+                                    data.payload.mediaType,
+                                    data.payload.mediaUrl
+                                );
                             }
                         } else {
                             updateMessageAck(data.payload.messageId, data.payload.ack);
                         }
                     }
+                    if (data.type === 'pong') {
+                        process.env.LOGGER_INFO === 'true' && console.log('[WebChat] Pong recebido');
+                    }
                 } catch (error) {
-                    console.error('[WebChat] Erro ao processar mensagem:', error);
+                    process.env.LOGGER_ERROR === 'true' && console.error('[WebChat] Erro ao processar mensagem WebSocket:', error);
                 }
             };
 
             ws.onerror = (error) => {
-                console.error('[WebChat] Erro na conexão:', error);
+                process.env.LOGGER_ERROR === 'true' && console.error('[WebChat] Erro na conexão WebSocket:', error);
             };
 
             ws.onclose = () => {
-                console.log('[WebChat] Conexão fechada');
+                process.env.LOGGER_INFO === 'true' && console.log('[WebChat] Conexão WebSocket fechada');
                 clearInterval(pingInterval);
                 clearInterval(historyInterval);
+                
                 if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                     reconnectAttempts++;
+                    process.env.LOGGER_INFO === 'true' && console.log(`[WebChat] Tentando reconectar (tentativa ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
                     setTimeout(connect, RECONNECT_DELAY);
+                } else {
+                    process.env.LOGGER_ERROR === 'true' && console.error('[WebChat] Número máximo de tentativas de reconexão atingido');
                 }
             };
         }
@@ -699,11 +758,14 @@ $
         connect();
     }
 
+    // Função para limpar a sessão
     async function clearSession() {
         if (confirm('Tem certeza que deseja limpar a sessão e começar uma nova conversa?')) {
             messagesDiv.innerHTML = '';
             sessionStorage.removeItem('channelWebchatId');
-            if (ws) ws.close();
+            if (ws) {
+                ws.close();
+            }
             webchatId = null;
             token = null;
             chatLoaded = false;
